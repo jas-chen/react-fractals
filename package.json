@@ -2,17 +2,18 @@
   "name": "react-fractals",
   "version": "0.0.1",
   "private": true,
+  "author": "Jas Chen",
   "devDependencies": {
     "gh-pages": "^0.12.0",
     "react-scripts": "0.7.0"
   },
   "dependencies": {
     "d3-scale": "^1.0.4",
-    "d3-selection": "^1.0.3",
+    "lodash.throttle": "^4.1.1",
     "react": "^15.4.0",
     "react-dom": "^15.4.0"
   },
-  "homepage": "https://swizec.github.io/react-fractals",
+  "homepage": "https://jas-chen.github.io/react-fractals",
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
