@@ -1,74 +1,71 @@
 import React, { Component } from 'react';
 import logo from './logo.svg';
 import './App.css';
-import { select as d3select, mouse as d3mouse } from 'd3-selection';
 import { scaleLinear } from 'd3-scale';
-
+import throttle from 'lodash.throttle';
 import Pythagoras from './Pythagoras';
 
-
-// borrowed from Vue fork https://github.com/yyx990803/vue-fractal/blob/master/src/App.vue
-function throttleWithRAF (fn) {
-  let running = false
-  return function () {
-    if (running) return
-    running = true
-    window.requestAnimationFrame(() => {
-      fn.apply(this, arguments)
-      running = false
-    })
-  }
-}
+const baseW = 80;
 
 class App extends Component {
     svg = {
         width: 1280,
-        height: 600
+        height: 600,
+        style: {
+            border: "1px solid lightgray"
+        }
     };
+
+    currentMax = 0;
+    heightFactor = 0;
+    lean = 0;
+
     state = {
-        currentMax: 0,
-        baseW: 80,
-        heightFactor: 0,
-        lean: 0
+        currentMax: this.currentMax,
+        heightFactor: this.heightFactor,
+        lean: this.lean
     };
+
     running = false;
     realMax = 11;
+    scaleFactor = scaleLinear().domain([this.svg.height, 0]).range([0, .8]);
+    scaleLean = scaleLinear().domain([0, this.svg.width/2, this.svg.width]).range([.5, 0, -.5]);
 
-    componentDidMount() {
-        d3select(this.refs.svg).on("mousemove", this.onMouseMove.bind(this));
-
-        this.next();
+    rafRender = () => {
+        requestAnimationFrame(() => {
+            this.setState({
+                currentMax: this.currentMax,
+                heightFactor: this.heightFactor,
+                lean: this.lean
+            }, this.rafRender);
+        });
     }
 
-    next() {
-        const { currentMax } = this.state;
-
-        if (currentMax < this.realMax) {
-            this.setState({currentMax: currentMax + 1});
-            setTimeout(this.next.bind(this), 500);
+    next = () => {
+        if (this.currentMax < this.realMax) {
+            this.currentMax += 1;
+            setTimeout(this.next, 500);
         }
     }
 
-    // Throttling approach borrowed from Vue fork
-    // https://github.com/yyx990803/vue-fractal/blob/master/src/App.vue
-    // rAF makes it slower than just throttling on React update
-    onMouseMove(event) {
-        if (this.running) return;
-        this.running = true;
+    onMouseMove = event => {
+        const  { offsetX: x, offsetY: y } = event;
+        this.heightFactor = this.scaleFactor(y);
+        this.lean = this.scaleLean(x);
+    }
 
-        const [x, y] = d3mouse(this.refs.svg),
+    throttledOnMouseMove = throttle(this.onMouseMove, Number(location.hash.substr(1)) || 12);
 
-              scaleFactor = scaleLinear().domain([this.svg.height, 0])
-                                         .range([0, .8]),
+    componentDidMount() {
+        this.refs.svg.addEventListener('mousemove', this.throttledOnMouseMove);
+        this.rafRender();
+        this.next();
+    }
 
-              scaleLean = scaleLinear().domain([0, this.svg.width/2, this.svg.width])
-                                       .range([.5, 0, -.5]);
-
-        this.setState({
-            heightFactor: scaleFactor(y),
-            lean: scaleLean(x)
-        });
-        this.running = false;
+    shouldComponentUpdate(nextProps, { currentMax, heightFactor, lean }) {
+        return heightFactor !== this.state.heightFactor
+            || lean !== this.state.heightFactor
+            || currentMax !== this.state.currentMax;
     }
 
     render() {
@@ -79,15 +76,18 @@ class App extends Component {
                     <h2>This is a dancing Pythagoras tree</h2>
                 </div>
                 <p className="App-intro">
-                    <svg width={this.svg.width} height={this.svg.height} ref="svg"
-                         style={{border: "1px solid lightgray"}}>
-
-                        <Pythagoras w={this.state.baseW}
-                                    h={this.state.baseW}
+                    <svg
+                        ref="svg"
+                        width={this.svg.width}
+                        height={this.svg.height}
+                        style={this.svg.style}
+                    >
+                        <Pythagoras w={baseW}
+                                    h={baseW}
                                     heightFactor={this.state.heightFactor}
                                     lean={this.state.lean}
                                     x={this.svg.width/2-40}
-                                    y={this.svg.height-this.state.baseW}
+                                    y={this.svg.height-baseW}
                                     lvl={0}
                                     maxlvl={this.state.currentMax}/>
 
