@@ -26,19 +26,27 @@ class App extends Component {
         lean: this.lean
     };
 
-    running = false;
     realMax = 11;
     scaleFactor = scaleLinear().domain([this.svg.height, 0]).range([0, .8]);
     scaleLean = scaleLinear().domain([0, this.svg.width/2, this.svg.width]).range([.5, 0, -.5]);
 
     rafRender = () => {
-        requestAnimationFrame(() => {
-            this.setState({
-                currentMax: this.currentMax,
-                heightFactor: this.heightFactor,
-                lean: this.lean
-            }, this.rafRender);
-        });
+        const shouldUpdate =
+            this.heightFactor !== this.state.heightFactor
+            || this.lean !== this.state.lean
+            || this.currentMax !== this.state.currentMax;
+
+        if (shouldUpdate) {
+            requestAnimationFrame(() => {
+                this.setState({
+                    currentMax: this.currentMax,
+                    heightFactor: this.heightFactor,
+                    lean: this.lean
+                }, this.rafRender);
+            });
+        } else {
+            requestAnimationFrame(this.rafRender);
+        }
     }
 
     next = () => {
@@ -60,12 +68,6 @@ class App extends Component {
         this.refs.svg.addEventListener('mousemove', this.throttledOnMouseMove);
         this.rafRender();
         this.next();
-    }
-
-    shouldComponentUpdate(nextProps, { currentMax, heightFactor, lean }) {
-        return heightFactor !== this.state.heightFactor
-            || lean !== this.state.heightFactor
-            || currentMax !== this.state.currentMax;
     }
 
     render() {
